@@ -35,13 +35,32 @@ class BetaGeoFitter(BaseFitter):
 
     """
 
-    def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
-        self.penalizer_coef = penalizer_coef
+    def __init__(self, penalizer_coef=0.0, iterative_fitting=1,
+            initial_params=None, verbose=False, tol=1e-4,
+            fit_method='Nelder-Mead', maxiter=2000):
+        """
+        Initialization, set penalizer_coef.
 
-    def fit(self, frequency, recency, T, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+        Parameters:
+            iterative_fitting: perform iterative_fitting fits over
+                               random/warm-started initial params
+            initial_params: set the initial parameters for the fitter.
+            verbose: set to true to print out convergence diagnostics.
+            tol: tolerance for termination of the function minimization
+                process.
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: max iterations for optimizer in scipy.optimize.minimize
+                will be overwritten if setted in kwargs.
+        """
+        self.penalizer_coef = penalizer_coef
+        self.iterative_fitting = iterative_fitting
+        self.initial_params = initial_params
+        self.verbose = verbose
+        self.tol = tol
+        self.fit_method = fit_method
+        self.maxiter = maxiter
+
+    def fit(self, frequency, recency, T, index=None, **kwargs):
         """
         Fit the data to the BG/NBD model.
 
@@ -51,17 +70,8 @@ class BetaGeoFitter(BaseFitter):
             recency: the recency vector of customers' purchases (denoted t_x in
                      literature).
             T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform iterative_fitting fits over
-                               random/warm-started initial params
-            initial_params: set the initial parameters for the fitter.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
             index: index for resulted DataFrame which is accessible via
                    self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
             kwargs: key word arguments to pass to the scipy.optimize.minimize
                     function as options dict
 
@@ -83,13 +93,13 @@ class BetaGeoFitter(BaseFitter):
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
             [frequency, scaled_recency, scaled_T, self.penalizer_coef],
-            iterative_fitting,
-            initial_params,
+            self.iterative_fitting,
+            self.initial_params,
             4,
-            verbose,
-            tol,
-            fit_method,
-            maxiter,
+            self.verbose,
+            self.tol,
+            self.fit_method,
+            self.maxiter,
             **kwargs)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
